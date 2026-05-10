@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rar-zip | $ whoami</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --green: #00ff41;
+    --green-dim: #0a0;
+    --bg: #0d0d0d;
+    --scanline: rgba(0, 255, 65, 0.02);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--green);
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* CRT scan lines */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      var(--scanline) 2px,
+      var(--scanline) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* CRT flicker */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%);
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ASCII art */
+  .ascii-header {
+    color: var(--green);
+    font-size: clamp(0.35rem, 1.2vw, 0.6rem);
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    white-space: pre;
+    text-shadow: 0 0 5px var(--green), 0 0 15px var(--green-dim);
+    overflow-x: auto;
+  }
+
+  .prompt-line {
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .prompt {
+    color: var(--green-dim);
+    white-space: nowrap;
+  }
+
+  .typing {
+    border-right: 2px solid var(--green);
+    animation: blink 0.8s step-end infinite;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  @keyframes blink {
+    0%, 100% { border-color: var(--green); }
+    50% { border-color: transparent; }
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 2.5rem;
+    border-left: 1px solid var(--green-dim);
+    padding-left: 1.2rem;
+    position: relative;
+  }
+
+  .section::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 0;
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  .section-title {
+    color: var(--green-dim);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-title::before {
+    content: '$';
+    color: var(--green);
+  }
+
+  .section-title span {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  /* About */
+  .about-content {
+    line-height: 1.8;
+    font-size: 0.95rem;
+  }
+
+  .highlight {
+    color: #fff;
+    background: var(--green-dim);
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+  }
+
+  /* Skills grid */
+  .skills-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .skill-tag {
+    border: 1px solid var(--green-dim);
+    color: var(--green);
+    padding: 0.35rem 0.9rem;
+    font-size: 0.85rem;
+    border-radius: 3px;
+    transition: all 0.2s;
+    text-shadow: 0 0 4px var(--green);
+  }
+
+  .skill-tag:hover {
+    background: rgba(0, 255, 65, 0.1);
+    box-shadow: 0 0 12px rgba(0, 255, 65, 0.25);
+    border-color: var(--green);
+  }
+
+  /* Projects */
+  .project-item {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid rgba(0, 255, 65, 0.15);
+    border-radius: 4px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .project-item:hover {
+    border-color: var(--green-dim);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.08);
+  }
+
+  .project-name {
+    color: var(--green);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .project-name::before { content: '> '; color: var(--green-dim); }
+
+  .project-desc {
+    color: rgba(0, 255, 65, 0.65);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+  }
+
+  .project-tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .project-tech span {
+    font-size: 0.75rem;
+    color: var(--green-dim);
+    border: 1px solid var(--green-dim);
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+  }
+
+  /* Contact */
+  .contact-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+  }
+
+  .contact-link {
+    color: var(--green);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-bottom: 1px dashed var(--green-dim);
+    padding-bottom: 0.15rem;
+    transition: all 0.2s;
+  }
+
+  .contact-link:hover {
+    color: #fff;
+    border-bottom-color: #fff;
+    text-shadow: 0 0 6px var(--green);
+  }
+
+  .contact-link .icon {
+    font-size: 1.1rem;
+  }
+
+  .cmd-before::before {
+    content: '>';
+    color: var(--green-dim);
+    margin-right: 0.5rem;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(0, 255, 65, 0.1);
+    font-size: 0.8rem;
+    color: var(--green-dim);
+    text-align: center;
+    opacity: 0.6;
+  }
+
+  .cursor-pulse {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: var(--green);
+    animation: cursorBlink 1s step-end infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+    box-shadow: 0 0 6px var(--green);
+  }
+
+  @keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 1.5rem 1rem; }
+    .ascii-header { font-size: 0.45rem; }
+    .contact-links { flex-direction: column; gap: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ASCII Banner -->
+  <pre class="ascii-header">
+███╗   ██╗██████╗  █████╗ ██████╗       ███████╗██╗██████╗
+████╗  ██║██╔══██╗██╔══██╗██╔══██╗      ╚══███╔╝██║██╔══██╗
+██╔██╗ ██║██████╔╝███████║██████╔╝█████╗  ███╔╝ ██║██████╔╝
+██║╚██╗██║██╔══██╗██╔══██║██╔══██╗╚════╝ ███╔╝  ██║██╔═══╝
+██║ ╚████║██║  ██║██║  ██║██║  ██║      ███████╗██║██║
+╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝      ╚══════╝╚═╝╚═╝
+  </pre>
+
+  <!-- Terminal prompt with typewriter -->
+  <div class="prompt-line">
+    <span class="prompt">rar-zip@github:~$</span>
+    <span class="typing" id="typing"></span><span class="cursor-pulse"></span>
+  </div>
+
+  <!-- About -->
+  <div class="section">
+    <div class="section-title"><span>cat</span> ~/about.txt</div>
+    <div class="about-content">
+      <p>你好，我是 <span class="highlight">rar-zip</span> —— 一名热爱开源的全栈开发者。</p>
+      <p style="margin-top:0.6rem;">热衷于用代码构建优雅的解决方案，探索技术的边界。相信<span class="highlight">简洁</span>胜过复杂，<span class="highlight">实践</span>优于理论。</p>
+      <p style="margin-top:0.6rem;">当前坐标：<span class="highlight">China</span> | 活跃于开源社区 | 终身学习者</p>
+    </div>
+  </div>
+
+  <!-- Skills -->
+  <div class="section">
+    <div class="section-title"><span>ls</span> ~/skills/</div>
+    <div class="skills-grid">
+      <span class="skill-tag">JavaScript / TypeScript</span>
+      <span class="skill-tag">React / Vue</span>
+      <span class="skill-tag">Node.js</span>
+      <span class="skill-tag">Python</span>
+      <span class="skill-tag">Go</span>
+      <span class="skill-tag">Rust</span>
+      <span class="skill-tag">Docker</span>
+      <span class="skill-tag">Linux</span>
+      <span class="skill-tag">Git / GitHub</span>
+      <span class="skill-tag">SQL / NoSQL</span>
+      <span class="skill-tag">CI/CD</span>
+      <span class="skill-tag">REST / GraphQL</span>
+    </div>
+  </div>
+
+  <!-- Projects -->
+  <div class="section">
+    <div class="section-title"><span>ls</span> ~/projects/</div>
+
+    <div class="project-item">
+      <div class="project-name">YiLiuyun</div>
+      <div class="project-desc">高度可定制的个人知识管理与自动化工作流平台，融合笔记、任务与脚本执行。</div>
+      <div class="project-tech">
+        <span>TypeScript</span><span>Node.js</span><span>React</span>
+      </div>
+    </div>
+
+    <div class="project-item">
+      <div class="project-name">dotfiles</div>
+      <div class="project-desc">精心调校的开发环境配置——终端、编辑器、Shell，开箱即用。</div>
+      <div class="project-tech">
+        <span>Shell</span><span>Lua</span><span>PowerShell</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact -->
+  <div class="section">
+    <div class="section-title"><span>cat</span> ~/contact.json</div>
+    <div class="contact-links">
+      <a href="https://github.com/rar-zip" class="contact-link" target="_blank" rel="noopener">
+        <span class="icon">&#x2382;</span> github.com/rar-zip
+      </a>
+      <a href="mailto:rar-zip@pm.me" class="contact-link">
+        <span class="icon">@</span> rar-zip@pm.me
+      </a>
+    </div>
+  </div>
+
+  <div class="footer">
+    [ System ready. Awaiting input<span class="cursor-pulse"></span> ]
+  </div>
+
+</div>
+
+<script>
+(function() {
+  const el = document.getElementById('typing');
+  const text = './whoami';
+  let i = 0;
+  function type() {
+    if (i <= text.length) {
+      el.textContent = text.slice(0, i);
+      i++;
+      setTimeout(type, 120 + Math.random() * 60);
+    }
+  }
+  setTimeout(type, 300);
+})();
+</script>
+</body>
+</html>
